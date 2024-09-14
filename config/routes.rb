@@ -4,4 +4,10 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   # root "articles#index"
   devise_for :users
+  resources :payments, only: [:new, :create] do
+    collection do
+      get 'success'
+      get 'cancel'
+    end
+  end
 end
