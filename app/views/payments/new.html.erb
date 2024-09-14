@@ -1,2 +1,51 @@
-<h1>Payments#new</h1>
-<p>Find me in app/views/payments/new.html.erb</p>
+<script src="https://js.stripe.com/v3/"></script>
+
+<h1>Buy Football Square</h1>
+
+<%= form_with(model: @payment, url: payments_path, local: true) do |form| %>
+  <div>
+    <%= form.label :amount %>
+    <%= form.number_field :amount, step: 0.01, value: 10.00 %> <!-- Default amount is $10.00 -->
+  </div>
+  <button id="checkout-button">Pay Now</button>
+<% end %>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var stripe = Stripe('<%= Stripe.api_key %>'); // Fetch the public key from Rails credentials
+        var checkoutButton = document.getElementById('checkout-button');
+
+        checkoutButton.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            // Call the PaymentsController `create` action which initiates the Stripe Checkout session
+            fetch('<%= payments_path %>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': '<%= form_authenticity_token %>',
+                },
+                body: JSON.stringify({
+                    payment: {
+                        amount: document.querySelector('input[name="payment[amount]"]').value
+                    }
+                })
+            })
+                .then(function(response) {
+                    return response.json(); // Expecting JSON response from the server
+                })
+                .then(function(session) {
+                    // Redirect to Stripe Checkout using the session ID returned by the server
+                    return stripe.redirectToCheckout({ sessionId: session.id });
+                })
+                .then(function(result) {
+                    if (result.error) {
+                        alert(result.error.message);
+                    }
+                })
+                .catch(function(error) {
+                    console.error("Error:", error);
+                });
+        });
+    });
+</script>
